@@ -14,7 +14,7 @@ shift 3
 
 START_DIR=$PWD
 
-# osgvo-neuroimaging environment
+# osgvo-freesurfer environment
 . /opt/setup.sh
 
 # license file comes with the job

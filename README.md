@@ -10,36 +10,61 @@ You will need your own license file. See the [FreeSurfer documentation](https://
 
 ```
 $ ./submit.sh --help
-usage: workflow-generator.py [-h] --subject_dir SUBJECT_DIR
-                             [--options OPTIONS] [--cores NUM_CORES]
-                             [--skip-recon] [--single-job] [--serial-job]
-                             [--hemi {rh,lh}] [--debug]
+usage: submit.sh [-h] --inputs-def INPUTS_DEF [--cores NUM_CORES]
+                 [--skip-recon] [--single-job] [--serial-job]
+                 [--hemi {rh,lh}] [--debug]
 
 Generate a pegasus workflow
 
 optional arguments:
   -h, --help            show this help message and exit
-  --subject_dir SUBJECT_DIR
-                        Directory with subject data files (mgz)
-  --options OPTIONS     options to pass to Freesurfer commands
+  --inputs-def INPUTS_DEF
+                        yaml based description of inputs
   --cores NUM_CORES     number of cores to use
   --skip-recon          Skip recon processing
   --single-job          Do all processing in a single job
   --serial-job          Do all processing as a serial workflow
   --hemi {rh,lh}        hemisphere to process (rh or lh)
   --debug               Enable debugging output
+
 ```
 
-## Example
+## Specifying Inputs
+
+What to process is specified in an YAML input file with the format:
+
+```
+samplename:
+    input: /some/path/to/input-mgz-or-nii
+    T2: /optional/path/to/T2
+    autorecon-options: 
+```
+
+Only `samplename` and `input` is required. Multiple inputs can be provided.
+
+An example is provided in the `example-run.yml` file:
+
+```
+THP0001:
+    input: tests/sub-THP0001_ses-THP0001UCI1_run-01_T1w.nii.gz
+    T2: tests/sub-THP0001_ses-THP0001UCI1_run-01_T2w.nii.gz
+    autorecon-options: -cw256
+
+sample-001:
+    input: /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-freesurfer:latest/opt/freesurfer-6.0.1/subjects/sample-001.mgz
+
+```
+
+
+## Submitting an Example Workflow
 
 Check out this repository to your OSG Connect account $HOME directory. Put your `license.txt` in the top level directory and run:
 
 ```
-$ 
-./submit.sh --options="-cw256" --subject_dir /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-neuroimaging:latest/opt/freesurfer-6.0.1/subjects
+$ ./submit.sh --inputs-def example-run.yml
 ```
 
-Once the workflow is running, you can check the status with `pegasus-status [wfdir]`. 
+The workflow will pick up the two samples as specified in the `example-run.yml` file, create a workflow and submit it. Once the workflow is running, you can check the status with `pegasus-status [wfdir]`. 
 
 ## Getting Help
 
