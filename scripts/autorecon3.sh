@@ -45,6 +45,6 @@ mv ${SUBJECT}/scripts/recon-all.log ${SUBJECT}/scripts/recon-all-step3.log
 cat ${SUBJECT}/scripts/recon-all-step1.log ${SUBJECT}/scripts/recon-all-step2*.log ${SUBJECT}/scripts/recon-all-step3.log > ${SUBJECT}/scripts/recon-all.log
 rm -f fsaverage lh.EC_average rh.EC_average
 tar cjf $START_DIR/${SUBJECT}_output.tar.bz2 *
-cp ${SUBJECT}/scripts/recon-all.log $START_DIR
+cp ${SUBJECT}/scripts/recon-all.log $START_DIR/${SUBJECT}_recon-all.log
 cd $START_DIR
 
