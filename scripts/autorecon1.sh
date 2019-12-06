@@ -26,7 +26,6 @@ export SUBJECTS_DIR=`mktemp -d --tmpdir=$PWD`
 echo "Will use SUBJECTS_DIR=$SUBJECTS_DIR"
 
 cp ${SUBJECT_FILE} $SUBJECTS_DIR/
-#cd ${SUBJECTS_DIR}
 
 ############################################################ 1st stage - serial
 recon-all                                                               \

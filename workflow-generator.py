@@ -49,77 +49,35 @@ def add_license_file(dax, job):
     job.uses(license_file, Link.INPUT)
 
 
-def create_single_job(dax, cores, subject_files, subject):
+def create_single_job(dax, sample, cores):
     """
     Create a workflow with a single job that runs entire freesurfer workflow
 
     :param dax: Pegasus ADAG
+    :param sample: a sample dict
     :param cores: number of cores to use
-    :param subject_files: list Pegasus File object pointing to the subject mri files
-    :param subject: name of subject being processed
-    :return: exit code (0 for success, 1 for failure)
-    :return: True if errors occurred, False otherwise
     """
-    errors = False
-    full_recon_job = Job(name="autorecon-all.sh".format(subject))
-    full_recon_job.addArguments(subject, str(cores))
-    for subject_file in subject_files:
-        full_recon_job.addArguments(subject_file)
-        full_recon_job.uses(subject_file, link=Link.INPUT)
-    output = File("{0}_output.tar.gz".format(subject))
-    full_recon_job.uses(output, link=Link.OUTPUT, transfer=True)
 
-    full_recon_job.addProfile(Profile(Namespace.CONDOR, "request_memory", "4G"))
-    full_recon_job.addProfile(Profile(Namespace.CONDOR, "request_cpus", cores))
+    full_recon_job = job("autorecon-all.sh", cores=cores, memory=3500)
+
+    full_recon_job.addArguments(sample['subject_name'], sample['input_lfn'], str(cores))
+    full_recon_job.uses(sample['input_lfn'], link=Link.INPUT)
+    if 'T2' in sample:
+        full_recon_job.addArguments('-T2', sample['T2_lfn'])
+        full_recon_job.uses(sample['T2_lfn'], link=Link.INPUT)
+    if 'autorecon-options' in sample:
+        full_recon_job.addArguments(sample['autorecon-options'])
+
+    add_license_file(dax, full_recon_job)
+
+    # outputs
+    output = File("{0}_output.tar.gz".format(sample['subject_name']))
+    full_recon_job.uses(output, link=Link.OUTPUT, transfer=True)
+    logs = File("{0}_recon-all.log".format(sample['subject_name']))
+    full_recon_job.uses(logs, link=Link.OUTPUT, transfer=True)
     
     dax.addJob(full_recon_job)
-    return errors
-
-
-def create_custom_job(dax, cores, subject_dir, subject, options):
-    """
-    Create a workflow with a single job that runs freesurfer workflow
-    with custom options
-
-    :param dax: Pegasus ADAG
-    :param cores: number of cores to use
-    :param subject_dir: pegasus File object pointing tarball containing
-                         subject dir
-    :param subject: name of subject being processed
-    :param options: options to FreeSurfer
-    :return: exit code (0 for success, 1 for failure)
-    :return: False if errors occurred, True otherwise
-    """
-    custom_job = Job(name="freesurfer-process.sh".format(subject))
-    custom_job.addArguments(subject, subject_dir, str(cores), options)
-    custom_job.uses(subject_dir, link=Link.INPUT)
-    output = File("{0}_output.tar.bz2".format(subject))
-    custom_job.uses(output, link=Link.OUTPUT, transfer=True)
-    logs = File("recon-all.log".format(subject))
-    custom_job.uses(logs, link=Link.OUTPUT, transfer=True)
-
-    custom_job.addProfile(Profile(Namespace.CONDOR, "request_memory", "4G"))
-    custom_job.addProfile(Profile(Namespace.CONDOR, "request_cpus", cores))
-    dax.addJob(custom_job)
-    return True
-
-
-def create_recon2_job(dax, cores, subject):
-    """
-    Set up jobs for the autorecon2 process for freesurfer
-
-    :param dax: Pegasus ADAG
-    :param subject: name of subject being processed
-    :return: True if errors occurred, the pegasus job otherwise
-    """
-    recon2_job = Job(name="autorecon2-whole.sh".format(subject))
-    output = File("{0}_recon1_output.tar.xz".format(subject))
-    recon2_job.uses(output, link=Link.INPUT)
-    output = File("{0}_recon2_output.tar.xz".format(subject))
-    recon2_job.uses(output, link=Link.OUTPUT, transfer=True)
-    recon2_job.addProfile(Profile(Namespace.CONDOR, "request_memory", "4G"))
-    recon2_job.addProfile(Profile(Namespace.CONDOR, "request_cpus", cores))
-    return recon2_job
+    return full_recon_job
 
 
 def create_initial_job(dax, sample, cores):
@@ -181,13 +139,12 @@ def create_hemi_job(dax, sample, hemisphere, cores):
     return autorecon2_job
 
 
-def create_final_job(dax, sample, cores, serial_job=False):
+def create_final_job(dax, sample, cores):
     """
     Set up jobs for the autorecon3 process for freesurfer
 
     :param dax: Pegasus ADAG
     :param sanple: sample dict
-    :param serial_job: boolean indicating whether this is a serial workflow or not
     :return: True if errors occurred, False otherwise
     """
 
@@ -198,14 +155,10 @@ def create_final_job(dax, sample, cores, serial_job=False):
     if 'autorecon-options' in sample:
         autorecon3_job.addArguments(sample['autorecon-options'])
 
-    if serial_job:
-        recon2_output = File("{0}_recon2_output.tar.xz".format(sample['subject_name']))
-        autorecon3_job.uses(recon2_output, link=Link.INPUT)
-    else:
-        lh_output = File("{0}_recon2_lh_output.tar.xz".format(sample['subject_name']))
-        autorecon3_job.uses(lh_output, link=Link.INPUT)
-        rh_output = File("{0}_recon2_rh_output.tar.xz".format(sample['subject_name']))
-        autorecon3_job.uses(rh_output, link=Link.INPUT)
+    lh_output = File("{0}_recon2_lh_output.tar.xz".format(sample['subject_name']))
+    autorecon3_job.uses(lh_output, link=Link.INPUT)
+    rh_output = File("{0}_recon2_rh_output.tar.xz".format(sample['subject_name']))
+    autorecon3_job.uses(rh_output, link=Link.INPUT)
     output = File("{0}_output.tar.bz2".format(sample['subject_name']))
     logs = File("{0}_recon-all.log".format(sample['subject_name']))
     autorecon3_job.uses(output, link=Link.OUTPUT, transfer=True)
@@ -214,54 +167,19 @@ def create_final_job(dax, sample, cores, serial_job=False):
     return autorecon3_job
 
 
-def create_serial_workflow(dax, cores, subject_file, subject,
-                           skip_recon=False):
-    """
-    Create a workflow that processes MRI images using a serial workflow
-    E.g. autorecon1 -> autorecon2 -> autorecon3
-
-    :param dax: Pegasus ADAG
-    :param cores: number of cores to use
-    :param subject_file: pegasus File object pointing to the subject mri file
-    :param subject: name of subject being processed
-    :param skip_recon: True to skip initial recon1 step
-    :return: True if errors occurred, False otherwise
-    """
-    # setup autorecon1 run
-    if not skip_recon:
-        initial_job = create_initial_job(dax, subject_file, subject)
-        if initial_job is True:
-            return True
-        dax.addJob(initial_job)
-    recon2_job = create_recon2_job(dax, cores, subject)
-    if recon2_job is True:
-        return True
-    dax.addJob(recon2_job)
-    dax.addDependency(Dependency(parent=initial_job, child=recon2_job))
-    final_job = create_final_job(dax, subject, serial_job=True)
-    if final_job is True:
-        return True
-    dax.addJob(final_job)
-    dax.addDependency(Dependency(parent=recon2_job, child=final_job))
-    return False
-
-
-def create_single_workflow(dax, cores, subject_files, subject):
+def create_single_workflow(dax, sample, cores):
     """
     Create a workflow that processes MRI images using a single job
 
     :param dax: Pegasus ADAG
+    :param sample: the sample dict
     :param cores: number of cores to use
-    :param subject_files: list of pegasus File object pointing to the
-                          subject mri files
-    :param subject: name of subject being processed
     :return: True if errors occurred, False otherwise
     """
-    return create_single_job(dax, cores, subject_files, subject)
+    return create_single_job(dax, sample, cores)
 
 
-def create_diamond_workflow(dax, sample, cores,
-                            skip_recon=False, options=None):
+def create_diamond_workflow(dax, sample, cores, skip_recon=False):
     """
     Create a workflow that processes MRI images using a diamond workflow
     E.g. autorecon1 -->   autorecon2-lh --> autorecon3
@@ -320,13 +238,7 @@ def generate_dax():
                         help='Skip recon processing')
     parser.add_argument('--single-job', dest='single_job', default=False,
                         action='store_true',
-                        help='Do all processing in a single job')
-    parser.add_argument('--serial-job', dest='serial_job', default=False,
-                        action='store_true',
-                        help='Do all processing as a serial workflow')
-    parser.add_argument('--hemi', dest='hemisphere', default=None,
-                        choices=['rh', 'lh'],
-                        help='hemisphere to process (rh or lh)')
+                        help='Do all processing in a single job per subject (recon-all)')
     parser.add_argument('--debug', dest='debug', default=False,
                         action='store_true',
                         help='Enable debugging output')
@@ -383,29 +295,20 @@ def generate_dax():
             dax.addFile(f)
         
         if args.single_job:
-            errors &= create_single_workflow(dax,
-                                             args.num_cores,
-                                             dax_subject_file,
-                                             subject)
-        elif args.serial_job:
-            errors &= create_serial_workflow(dax,
-                                             args.num_cores,
-                                             dax_subject_file,
-                                             subject,
-                                             args.skip_recon,
-                                             args.options)
+            create_single_workflow(dax,
+                                   sample,
+                                   args.num_cores)
         else:
-            errors &= create_diamond_workflow(dax,
-                                              sample,
-                                              args.num_cores,
-                                              args.skip_recon)
-    if not errors:  # no problems while generating DAX
-        dax_name = "freesurfer-osg.xml"
-        with open(dax_name, 'w') as f:
-            dax.writeXML(f)
-    return errors
+            create_diamond_workflow(dax,
+                                    sample,
+                                    args.num_cores,
+                                    args.skip_recon)
+
+    dax_name = "freesurfer-osg.xml"
+    with open(dax_name, 'w') as f:
+        dax.writeXML(f)
 
 
 if __name__ == '__main__':
-    failed = generate_dax()
-    sys.exit(int(failed))
+    generate_dax()
+    sys.exit(0)

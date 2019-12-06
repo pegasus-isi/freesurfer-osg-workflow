@@ -22,9 +22,7 @@ optional arguments:
                         yaml based description of inputs
   --cores NUM_CORES     number of cores to use
   --skip-recon          Skip recon processing
-  --single-job          Do all processing in a single job
-  --serial-job          Do all processing as a serial workflow
-  --hemi {rh,lh}        hemisphere to process (rh or lh)
+  --single-job          Do all processing in a single job per subject
   --debug               Enable debugging output
 
 ```
