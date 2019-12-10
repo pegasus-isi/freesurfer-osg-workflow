@@ -15,14 +15,20 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SCRIPT_DIR = os.path.join(BASE_DIR, 'scripts')
 
 license_file = None
+job_id = 0
 
-def job(name, run_on_submit_node=False, cores=1, memory=1700, disk=10000):
+
+def job(name, id=None, run_on_submit_node=False, cores=1, memory=1700, disk=10000):
     """
     Wrapper for a Pegasus job, also sets resource requirement profiles. Memory and
     disk units are in MBs.
     """
-
-    job = Job(name)
+    global job_id
+    
+    # ever increasing
+    job_id += 1
+    
+    job = Job(name, id='{}_{:05d}'.format(id, job_id))
     job.addProfile(Profile(Namespace.CONDOR, 'request_cpus', str(cores)))
     job.addProfile(Profile(Namespace.CONDOR, 'request_disk', str(disk)))
 
@@ -58,7 +64,9 @@ def create_single_job(dax, sample, cores):
     :param cores: number of cores to use
     """
 
-    full_recon_job = job("autorecon-all.sh", cores=cores, memory=3500)
+    full_recon_job = job("autorecon-all.sh",
+                         id=sample['subject_name'],
+                         cores=cores, memory=3500)
 
     full_recon_job.addArguments(sample['subject_name'], sample['input_lfn'], str(cores))
     full_recon_job.uses(sample['input_lfn'], link=Link.INPUT)
@@ -88,7 +96,7 @@ def create_initial_job(dax, sample, cores):
     :param sample: the sample dict
     :return: the generated job
     """
-    autorecon1_job = job("autorecon1.sh", cores=cores, memory=3500)
+    autorecon1_job = job("autorecon1.sh", id=sample['subject_name'], cores=cores, memory=3500)
 
     autorecon1_job.addArguments(sample['subject_name'], sample['input_lfn'], str(cores))
     autorecon1_job.uses(sample['input_lfn'], link=Link.INPUT)
@@ -122,7 +130,9 @@ def create_hemi_job(dax, sample, hemisphere, cores):
     if hemisphere not in ['rh', 'lh']:
         return True
 
-    autorecon2_job = job("autorecon2.sh", cores=cores, memory=4000)
+    autorecon2_job = job("autorecon2.sh",
+                         id=sample['subject_name'] + '-' + hemisphere,
+                         cores=cores, memory=4000)
     autorecon2_job.addArguments(sample['subject_name'], hemisphere, str(cores))
     # TODO: do we need T2 here?
     if 'autorecon-options' in sample:
@@ -148,7 +158,7 @@ def create_final_job(dax, sample, cores):
     :return: True if errors occurred, False otherwise
     """
 
-    autorecon3_job = job("autorecon3.sh", cores=cores, memory=4000)
+    autorecon3_job = job("autorecon3.sh", id=sample['subject_name'], cores=cores, memory=4000)
 
     # only use one core on final job, more than 1 core doesn't help things
     autorecon3_job.addArguments(sample['subject_name'], str(cores))

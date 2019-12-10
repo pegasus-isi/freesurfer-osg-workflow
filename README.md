@@ -6,6 +6,8 @@ Please run the workflow from your [OSG Connect](https://osgconnect.net/) account
 
 You will need your own license file. See the [FreeSurfer documentation](https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall#License) for details on how to obtain the license. Once you have it, name it `license.txt` and put it in the same directory as you are submitting the workflow from, as Pegasus will pick up the file and send it with the jobs.
 
+This is a community driven development effort - feel free to fork and submit pull requests if you have improvements you want to share with the community. Thank you!
+
 ## submit.sh usage
 
 ```
@@ -63,6 +65,8 @@ $ ./submit.sh --inputs-def example-run.yml
 ```
 
 The workflow will pick up the two samples as specified in the `example-run.yml` file, create a workflow and submit it. Once the workflow is running, you can check the status with `pegasus-status [wfdir]`. 
+
+Outputs will be staged to `/local-scratch/$USER/workflows/outputs/`
 
 ## Getting Help
 
