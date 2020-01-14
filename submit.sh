@@ -3,9 +3,6 @@
 set -e
 
 export WORK_DIR=$HOME/workflows
-if ls /local-scratch/ >/dev/null 2>&1; then
-    export WORK_DIR=/local-scratch/$USER/workflows
-fi
 mkdir -p $WORK_DIR
 
 export RUN_ID=freesurfer-`date +'%s'`
