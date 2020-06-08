@@ -17,7 +17,7 @@
         <profile namespace="condor" key="requirements" >Arch == "X86_64" &amp;&amp; HAS_SINGULARITY == True</profile>
 
         <!-- always run under singularity -->
-        <profile namespace="condor" key="+SingularityImage" >"/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-freesurfer:latest"</profile>
+        <profile namespace="condor" key="+SingularityImage" >"/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-freesurfer:$VERSION"</profile>
     </site>
 
 </sitecatalog>

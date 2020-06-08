@@ -1,0 +1,9 @@
+THP0001:
+    input: tests/sub-THP0001_ses-THP0001UCI1_run-01_T1w.nii.gz
+    T2: tests/sub-THP0001_ses-THP0001UCI1_run-01_T2w.nii.gz
+    autorecon-options: -cw256 -hippocampal-subfields-T1T2 ${t2} t1t2
+
+sample-001:
+    input: /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-freesurfer:latest/opt/freesurfer-6.0.1/subjects/sample-001.mgz
+
+

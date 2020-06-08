@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import sys
-import os
 import argparse
-import time
+import os
 import re
+import string
+import sys
+import time
 import yaml
 
 from pprint import pprint
@@ -14,8 +15,17 @@ from Pegasus.DAX3 import *
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SCRIPT_DIR = os.path.join(BASE_DIR, 'scripts')
 
+DEFAULT_VERSION = '7.0.0'
+
 license_file = None
 job_id = 0
+
+
+def subs(s, t2=''):
+    '''
+    Substitue variables into command line arguments
+    '''
+    return string.Template(s).substitute(locals())
 
 
 def job(name, id=None, run_on_submit_node=False, cores=1, memory=1700, disk=10000):
@@ -70,11 +80,15 @@ def create_single_job(dax, sample, cores):
 
     full_recon_job.addArguments(sample['subject_name'], sample['input_lfn'], str(cores))
     full_recon_job.uses(sample['input_lfn'], link=Link.INPUT)
+
+    t2 = ''
     if 'T2' in sample:
         full_recon_job.addArguments('-T2', sample['T2_lfn'])
         full_recon_job.uses(sample['T2_lfn'], link=Link.INPUT)
+        t2 = sample['T2_lfn']
+
     if 'autorecon-options' in sample:
-        full_recon_job.addArguments(sample['autorecon-options'])
+        full_recon_job.addArguments(subs(sample['autorecon-options'], t2=t2))
 
     add_license_file(dax, full_recon_job)
 
@@ -100,11 +114,15 @@ def create_initial_job(dax, sample, cores):
 
     autorecon1_job.addArguments(sample['subject_name'], sample['input_lfn'], str(cores))
     autorecon1_job.uses(sample['input_lfn'], link=Link.INPUT)
+
+    t2 = ''
     if 'T2' in sample:
         autorecon1_job.addArguments('-T2', sample['T2_lfn'])
         autorecon1_job.uses(sample['T2_lfn'], link=Link.INPUT)
+        t2 = sample['T2_lfn']
+
     if 'autorecon-options' in sample:
-        autorecon1_job.addArguments(sample['autorecon-options'])
+        autorecon1_job.addArguments(subs(sample['autorecon-options'], t2=t2))
    
     # inputs
     add_license_file(dax, autorecon1_job)
@@ -134,9 +152,15 @@ def create_hemi_job(dax, sample, hemisphere, cores):
                          id=sample['subject_name'] + '-' + hemisphere,
                          cores=cores, memory=4000)
     autorecon2_job.addArguments(sample['subject_name'], hemisphere, str(cores))
-    # TODO: do we need T2 here?
+
+    #t2 = ''
+    #if 'T2' in sample:
+    #    autorecon2_job.addArguments('-T2', sample['T2_lfn'])
+    #    autorecon2_job.uses(sample['T2_lfn'], link=Link.INPUT)
+    #    t2 = sample['T2_lfn']
+
     if 'autorecon-options' in sample:
-        autorecon2_job.addArguments(sample['autorecon-options'])
+        autorecon2_job.addArguments(subs(sample['autorecon-options']))
         
     input = File("{0}_recon1_output.tar.xz".format(sample['subject_name']))
     autorecon2_job.uses(input, link=Link.INPUT)
@@ -162,8 +186,15 @@ def create_final_job(dax, sample, cores):
 
     # only use one core on final job, more than 1 core doesn't help things
     autorecon3_job.addArguments(sample['subject_name'], str(cores))
+
+    #t2 = ''
+    #if 'T2' in sample:
+    #    autorecon3_job.addArguments('-T2', sample['T2_lfn'])
+    #    autorecon3_job.uses(sample['T2_lfn'], link=Link.INPUT)
+    #    t2 = sample['T2_lfn']
+
     if 'autorecon-options' in sample:
-        autorecon3_job.addArguments(sample['autorecon-options'])
+        autorecon3_job.addArguments(subs(sample['autorecon-options']))
 
     lh_output = File("{0}_recon2_lh_output.tar.xz".format(sample['subject_name']))
     autorecon3_job.uses(lh_output, link=Link.INPUT)
@@ -186,7 +217,8 @@ def create_single_workflow(dax, sample, cores):
     :param cores: number of cores to use
     :return: True if errors occurred, False otherwise
     """
-    return create_single_job(dax, sample, cores)
+    create_single_job(dax, sample, cores)
+    return True
 
 
 def create_diamond_workflow(dax, sample, cores, skip_recon=False):
@@ -249,6 +281,9 @@ def generate_dax():
     parser.add_argument('--single-job', dest='single_job', default=False,
                         action='store_true',
                         help='Do all processing in a single job per subject (recon-all)')
+    parser.add_argument('--version', dest='version', default='7.0.0',
+                        help='Freesurfer version to use. Valid choices: 6.0.0, 6.0.1, 7.0.0'+
+                             ' Current default: ' + DEFAULT_VERSION)
     parser.add_argument('--debug', dest='debug', default=False,
                         action='store_true',
                         help='Enable debugging output')
@@ -303,7 +338,7 @@ def generate_dax():
             f = File(sample['T2_lfn'])
             f.addPFN(PFN("file://{0}".format(sample['T2_pfn']), "local"))
             dax.addFile(f)
-        
+       
         if args.single_job:
             create_single_workflow(dax,
                                    sample,
@@ -317,6 +352,9 @@ def generate_dax():
     dax_name = "freesurfer-osg.xml"
     with open(dax_name, 'w') as f:
         dax.writeXML(f)
+
+    os.environ['VERSION'] = args.version
+    os.system('envsubst < sites.xml.template > sites.xml')
 
 
 if __name__ == '__main__':

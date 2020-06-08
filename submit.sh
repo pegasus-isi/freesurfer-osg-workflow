@@ -7,9 +7,6 @@ mkdir -p $WORK_DIR
 
 export RUN_ID=freesurfer-`date +'%s'`
 
-# create the site catalog from the template
-envsubst < sites.xml.template > sites.xml
-
 # generate the workflow
 ./workflow-generator.py "$@"
 
