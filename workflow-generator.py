@@ -15,7 +15,7 @@ from Pegasus.DAX3 import *
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SCRIPT_DIR = os.path.join(BASE_DIR, 'scripts')
 
-DEFAULT_VERSION = '7.0.0'
+DEFAULT_VERSION = '7.1.1'
 
 license_file = None
 job_id = 0
@@ -281,8 +281,8 @@ def generate_dax():
     parser.add_argument('--single-job', dest='single_job', default=False,
                         action='store_true',
                         help='Do all processing in a single job per subject (recon-all)')
-    parser.add_argument('--version', dest='version', default='7.0.0',
-                        help='Freesurfer version to use. Valid choices: 6.0.0, 6.0.1, 7.0.0'+
+    parser.add_argument('--version', dest='version', default=DEFAULT_VERSION,
+                        help='Freesurfer version to use. Valid choices: 6.0.0, 6.0.1, 7.0.0, 7.1.1'+
                              ' Current default: ' + DEFAULT_VERSION)
     parser.add_argument('--debug', dest='debug', default=False,
                         action='store_true',
