@@ -10,9 +10,6 @@ export RUN_ID=freesurfer-`date +'%s'`
 # generate the workflow
 ./workflow-generator.py "$@"
 
-# make sure we also have access to the AMQP lib
-export PYTHONPATH="$PYTHONPATH:/usr/lib/python2.6/site-packages"
-
 # plan and submit the  workflow
 pegasus-plan \
     --conf pegasus.conf \
