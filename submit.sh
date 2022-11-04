@@ -17,9 +17,9 @@ pegasus-plan \
     --relative-dir $RUN_ID \
     --sites condorpool \
     --output-site local \
-    --dax freesurfer-osg.xml \
     --cluster horizontal \
-    --submit
+    --submit \
+    freesurfer-osg.xml
 
 
 
